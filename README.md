@@ -25,3 +25,4 @@
 
 ## ตั้งค่า Pages
 Settings → Pages → Source: **Deploy from a branch** → Branch: `main` · Folder: `/ (root)` · ไฟล์ `.nojekyll` ต้องมี
+
