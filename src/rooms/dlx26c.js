@@ -16,21 +16,21 @@ const ROOM = { W:5.8, D:4.5, H:2.6, T:0.14 };
 
 const TXT = {
   th:{
-    title:'ห้อง Deluxe Studio หัวมุม',
+    title:'ห้อง Deluxe Studio หัวมุม 27 ตร.ม.',
     meta:['หน้าต่างบานใหญ่หลังโซฟา · ระเบียงกว้างกว่า','ทีวี · ตู้เย็นเล็ก · ห้องน้ำหินอ่อน Rain Shower · ตู้เสื้อผ้าบิลท์อิน'],
     note:'ภาพจำลอง 3 มิติ ขนาดและของตกแต่งอาจต่างจากห้องจริงเล็กน้อย',
     hintOrbit:'ลากเพื่อหมุนห้อง · บีบเพื่อซูม · แตะชื่อจุดเพื่อเข้าไปดู',
     hintWalk:'ลากเพื่อมองรอบห้อง · แตะที่พื้นเพื่อเดิน · บีบเพื่อซูม' + (fine ? ' · WASD' : ''),
-    aria:'ภาพ 3 มิติของห้อง Deluxe Studio หัวมุม ที่ S.House',
+    aria:'ภาพ 3 มิติของห้อง Deluxe Studio หัวมุม 27 ตร.ม. ที่ S.House',
     fail:'อุปกรณ์หรือเบราว์เซอร์นี้แสดงภาพ 3 มิติไม่ได้ ลองเปิดด้วย Chrome หรือ Safari เวอร์ชันล่าสุด'
   },
   en:{
-    title:'Deluxe Studio Corner Room',
+    title:'Deluxe Studio Corner Room 27 sq.m.',
     meta:['Big window behind the sofa · Wider private balcony','TV · Mini fridge · Marble rain-shower bathroom · Built-in wardrobe'],
     note:'3D model. Size and furnishings may differ slightly from the actual room.',
     hintOrbit:'Drag to rotate · Pinch to zoom · Tap a label to step inside',
     hintWalk:'Drag to look around · Tap the floor to walk · Pinch to zoom' + (fine ? ' · WASD' : ''),
-    aria:'3D view of the Deluxe Studio corner room at S.House',
+    aria:'3D view of the Deluxe Studio corner room 27 sq.m. at S.House',
     fail:'This device or browser cannot show 3D. Try the latest Chrome or Safari.'
   }
 };
