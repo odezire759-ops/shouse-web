@@ -504,7 +504,7 @@ function sky(){
    first press of the button, so a visitor who never presses it downloads nothing extra. */
 const lin = h => new THREE.Color(h).convertSRGBToLinear();
 const CINE = (function(){
-  const EXPOSURE = .7;
+  const EXPOSURE = .78;
   const NAMES = { th:{1:'ประหยัด',2:'สมดุล',3:'สูงสุด'}, en:{1:'Lite',2:'Mid',3:'Max'} };
   const LBL = {
     th:{ btn:'สมจริง', off:'ปิดอยู่', busy:'รอสักครู่…', on:'เปิด', tip:'โหมดสมจริง: แสงแดด เงา และเงาสะท้อนแบบภาพยนตร์ ปรับคุณภาพตามเครื่องอัตโนมัติ', fail:'เปิดโหมดสมจริงไม่ได้ในตอนนี้ ลองกดอีกครั้ง' },
@@ -757,7 +757,7 @@ const CINE = (function(){
       }
       if(m.isMeshStandardMaterial){
         const glossy = m.metalness > .25 || m.roughness < .2;
-        setP(m,'envMapIntensity', m.userData.env != null ? m.userData.env : (glossy ? .18 : .035));
+        setP(m,'envMapIntensity', m.userData.env != null ? m.userData.env : (glossy ? .2 : .10));
         if(isWood(m)){ setP(m,"map",grainTex()); m.color.multiplyScalar(1.02); }
       }
     });
@@ -785,7 +785,7 @@ const CINE = (function(){
     S.blobs.forEach(o => setP(o.material,'opacity', o.material.opacity*.3));
 
     /* lights */
-    S.hemi.forEach(l => { setCol(l.color, lin(0xB9D1EC)); setCol(l.groundColor, lin(0xA98B69)); setP(l,'intensity',.12); });
+    S.hemi.forEach(l => { setCol(l.color, lin(0xB9D1EC)); setCol(l.groundColor, lin(0xA98B69)); setP(l,'intensity',.34); });
     S.point.forEach(l => { setCol(l.color, l.color.clone().convertSRGBToLinear().lerp(lin(0xFFC48A), .45)); setP(l,'intensity', l.intensity*.8); });
     const sun = S.dir[0]; st.sun = sun;
     if(sun){
