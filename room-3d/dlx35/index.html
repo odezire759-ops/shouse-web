@@ -83,7 +83,7 @@ h1{margin:7px 0 0; font:600 21px/1.2 var(--font-display); text-wrap:balance}
 .topr{display:flex; flex-direction:column; align-items:stretch; gap:8px; flex:none; width:112px}
 /* Realistic-mode switch: a physical push button with a lamp that lights up when on */
 .real{
-  pointer-events:auto; display:grid; grid-template-columns:auto 1fr; column-gap:9px; align-items:center; text-align:left;
+  pointer-events:auto; display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:9px; align-items:center; text-align:left;
   min-height:48px; padding:8px 13px 8px 11px; cursor:pointer; color:var(--ink); border-radius:14px;
   border:1px solid var(--line);
   background:var(--chip) linear-gradient(180deg,rgba(255,255,255,.34),rgba(0,0,0,.07));
@@ -106,6 +106,8 @@ h1{margin:7px 0 0; font:600 21px/1.2 var(--font-display); text-wrap:balance}
 .real b{display:block; font:600 14px/1.15 var(--font-display); letter-spacing:.01em}
 .real small{display:block; margin-top:2px; font:500 12px/1.2 var(--font-body); color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){.real{transition:none} .real .led{animation:none}}
+/* narrow phones: keep the column slim so the title card keeps its width */
+@media (max-width:420px){.topr{width:98px} .real{min-height:46px; padding:7px 9px 7px 9px; column-gap:7px} .real b{font-size:13px} .real small{font-size:11px}}
 
 .bottom{display:flex; flex-direction:column; align-items:center; gap:10px; min-width:0}
 .hint{
@@ -526,7 +528,7 @@ const CINE = (function(){
   const LBL = {
     th:{ btn:'สมจริง', off:'ปิดอยู่', busy:'รอสักครู่…', on:'เปิด', tip:'โหมดสมจริง: แสงแดด เงา และเงาสะท้อนแบบภาพยนตร์ ปรับคุณภาพตามเครื่องอัตโนมัติ', fail:'เปิดโหมดสมจริงไม่ได้ในตอนนี้ ลองกดอีกครั้ง' },
     en:{ btn:'Realistic', off:'Off', busy:'Wait…', on:'On', tip:'Realistic mode: cinematic sunlight, shadows and reflections. Quality adapts to your device automatically.', fail:'Could not start Realistic mode. Please try again.' } };
-  const st = { on:false, busy:false, built:false, tier:2, maxTier:3, res:1, undo:[], extras:[], hide:[], composer:null, ao:null, bloom:null, grade:null,
+  const st = { on:false, busy:false, built:false, tier:2, maxTier:3, res:1, undo:[], extras:[], meshes:[], composer:null, ao:null, bloom:null, grade:null,
                W:1, H:1, lang:'th', ema:0, cnt:0, skip:0, fc:0, caps:null, S:null, win:null, sunDir:null, env:null, grain:null, sun:null, err:null };
 
   /* ---------- AO on the HDR buffer: SSAOPass renders its own 8-bit "beauty"; we reuse only its depth/normal + AO maths ---------- */
@@ -544,9 +546,10 @@ const CINE = (function(){
       u.cameraNear.value = cam.near; u.cameraFar.value = cam.far;
       u.cameraProjectionMatrix.value.copy(cam.projectionMatrix); u.cameraInverseProjectionMatrix.value.copy(cam.projectionMatrixInverse);
       u.kernelRadius.value = this.kernelRadius; u.minDistance.value = this.minDistance; u.maxDistance.value = this.maxDistance;
-      const vis = st.hide.map(o => o.visible); st.hide.forEach(o => { o.visible = false; });
+      const hide = st.meshes.filter(o => { const m = Array.isArray(o.material) ? o.material[0] : o.material; return m.transparent && (m.depthWrite === false || m.opacity < .9) && !o.userData.keepAO; });
+      const vis = hide.map(o => o.visible); hide.forEach(o => { o.visible = false; });
       this.renderOverride(renderer, this.normalMaterial, this.normalRenderTarget, 0x7777ff, 1.0);
-      st.hide.forEach((o,i) => { o.visible = vis[i]; });
+      hide.forEach((o,i) => { o.visible = vis[i]; });
       cam.far = farKeep; cam.updateProjectionMatrix();
       this.renderPass(renderer, this.ssaoMaterial, this.ssaoRenderTarget, 0xffffff, 1.0);
       this.renderPass(renderer, this.blurMaterial, this.blurRenderTarget, 0xffffff, 1.0);
@@ -579,6 +582,8 @@ const CINE = (function(){
   };
 
   /* ---------- small helpers ---------- */
+  /* fade-group materials (userData.base) flip .transparent with the camera mode (dollhouse view ghosts the furniture), so judge them by authored opacity */
+  const ghostly = m => m.userData && m.userData.base != null ? m.userData.base < 1 : !!m.transparent;
   const rec = f => { st.undo.push(f); };
   const setCol = (c,v) => { const o = c.clone(); c.copy(v); rec(() => c.copy(o)); };
   const setP = (o,k,v) => { const old = o[k]; o[k] = v; rec(() => { o[k] = old; }); };
@@ -701,7 +706,7 @@ const CINE = (function(){
     return st.grain;
   }
   const isWood = m => {
-    if(!m.isMeshStandardMaterial || m.map || m.transparent || m.userData.hex == null) return false;
+    if(!m.isMeshStandardMaterial || m.map || ghostly(m) || m.userData.hex == null) return false;
     const c = new THREE.Color(m.userData.hex), hsl = {}; c.getHSL(hsl);
     return hsl.h >= .04 && hsl.h <= .12 && hsl.s >= .35 && hsl.s <= .85 && hsl.l >= .18 && hsl.l <= .72 && m.roughness >= .3 && m.roughness <= .7;
   };
@@ -713,10 +718,10 @@ const CINE = (function(){
     if(fxReady()) return Promise.resolve();
     if(fxPromise) return fxPromise;
     fxPromise = new Promise((ok, no) => {
-      const s = document.createElement('script');
+      const s = document.createElement('script'), tm = setTimeout(() => no(new Error('fx.js timed out')), 25000);   // a late arrival still counts on the next press
       s.async = true; s.src = new URL('../fx.js?v=1', location.href).href;        // pages live at room-3d/<key>/ ; the bundle at room-3d/fx.js
-      s.onload = () => fxReady() ? ok() : no(new Error('fx.js incomplete'));
-      s.onerror = () => { s.remove(); no(new Error('fx.js failed to load')); };
+      s.onload = () => { clearTimeout(tm); fxReady() ? ok() : no(new Error('fx.js incomplete')); };
+      s.onerror = () => { clearTimeout(tm); s.remove(); no(new Error('fx.js failed to load')); };
       document.head.appendChild(s);
     }).catch(e => { fxPromise = null; throw e; });
     return fxPromise;
@@ -760,13 +765,13 @@ const CINE = (function(){
     S.mats.forEach(m => {
       if(m.color){
         const c2 = m.color.clone().convertSRGBToLinear();
-        if(m.isMeshStandardMaterial && !m.transparent && !m.map && m.metalness < .3){ const f = .035; c2.r = Math.max(c2.r,f); c2.g = Math.max(c2.g,f); c2.b = Math.max(c2.b,f); }   // real black cloth/plastic still reflects ~3-4%
+        if(m.isMeshStandardMaterial && !ghostly(m) && !m.map && m.metalness < .3){ const f = .035; c2.r = Math.max(c2.r,f); c2.g = Math.max(c2.g,f); c2.b = Math.max(c2.b,f); }   // real black cloth/plastic still reflects ~3-4%
         setCol(m.color, c2);
       }
       if(m.emissive) setCol(m.emissive, m.emissive.clone().convertSRGBToLinear());
       [m.map, m.emissiveMap].forEach(t => { if(t && !texOld.has(t)){ texOld.set(t, t.encoding); t.encoding = THREE.sRGBEncoding; } });
       m.needsUpdate = true;
-      if(m.isMeshBasicMaterial && !m.transparent){
+      if(m.isMeshBasicMaterial && !ghostly(m)){
         const k = m.side === THREE.BackSide ? 6 : m.map ? 2.6 : 11; m.color.multiplyScalar(k);
       }
       if(m.isMeshStandardMaterial){
@@ -805,22 +810,38 @@ const CINE = (function(){
     if(sun){
       const hi = st.tier >= 3, sc = sun.shadow.camera;
       const keep = { pos:sun.position.clone(), tgt:sun.target.position.clone(), l:sc.left, r:sc.right, t:sc.top, b:sc.bottom, n:sc.near, f:sc.far,
-                     bias:sun.shadow.bias, nb:sun.shadow.normalBias, ms:sun.shadow.mapSize.clone() };
+                     bias:sun.shadow.bias, nb:sun.shadow.normalBias, ms:sun.shadow.mapSize.clone(), map:sun.shadow.map, m:sun.shadow.matrix.clone() };
       setCol(sun.color, lin(0xFFC585)); setP(sun,'intensity',4.0);
       sun.target.position.set(0,0,0); sun.position.copy(sunDir).multiplyScalar(14);
       Object.assign(sc,{ left:-8, right:8, top:8, bottom:-8, near:1, far:40 }); sc.updateProjectionMatrix();
       sun.shadow.bias = -.0004; sun.shadow.normalBias = .018; sun.shadow.mapSize.set(hi ? 4096 : 2048, hi ? 4096 : 2048);
-      if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
+      sun.shadow.map = null;                                   // the realistic look bakes its own map; the engine's original one (keep.map) is left untouched
       rec(() => {
         sun.position.copy(keep.pos); sun.target.position.copy(keep.tgt);
         Object.assign(sc,{ left:keep.l, right:keep.r, top:keep.t, bottom:keep.b, near:keep.n, far:keep.f }); sc.updateProjectionMatrix();
         sun.shadow.bias = keep.bias; sun.shadow.normalBias = keep.nb; sun.shadow.mapSize.copy(keep.ms);
-        if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; }
+        if(sun.shadow.map && sun.shadow.map !== keep.map) sun.shadow.map.dispose();
+        sun.shadow.map = keep.map; sun.shadow.matrix.copy(keep.m);      // back to the exact shadows the page had before (the map is static)
+        if(!keep.map) renderer.shadowMap.needsUpdate = true;
       });
     }
     st.extras.forEach(l => { l.visible = true; });
     rec(() => { st.extras.forEach(l => { l.visible = false; }); });
+    bakeShadows();
+  }
+
+  /* The engine renders its sun shadow once (shadowMap.autoUpdate = false) in whatever fade state the page happens to be in: in the overview the ceiling
+     and the near walls are faded out and the furniture is ghosted, so they would not cast shadows. For the realistic look the map is baked once with every
+     fade group switched on (the real architecture), so the picture does not depend on the camera mode the visitor was in when pressing the button. */
+  function bakeShadows(){
+    if(!st.sun) return;
+    const keepVis = []; for(const k in FADE){ const g = FADE[k].group; keepVis.push([g, g.visible]); g.visible = true; }
+    /* only the sun is re-baked: any other shadow-casting light keeps the map the engine rendered, so turning the mode off restores the page exactly */
+    const others = []; scene.traverse(o => { if(o.isLight && o !== st.sun && o.castShadow){ others.push(o); o.castShadow = false; } });
+    const rt = st.bakeRT || (st.bakeRT = new THREE.WebGLRenderTarget(2,2)), prev = renderer.getRenderTarget();
     renderer.shadowMap.needsUpdate = true;
+    try{ renderer.setRenderTarget(rt); renderer.render(scene,camera); }
+    finally{ renderer.setRenderTarget(prev); others.forEach(o => { o.castShadow = true; }); keepVis.forEach(v => { v[0].visible = v[1]; }); }
   }
 
   function buildExtras(){
@@ -868,8 +889,7 @@ const CINE = (function(){
     if(st.ao){ st.ao.resScale = t >= 3 ? 1 : .5; st.ao.setSize(st.ao._w, st.ao._h); }
     if(st.sun){
       const hi = t >= 3, ms = hi ? 4096 : 2048;
-      if(st.sun.shadow.mapSize.x !== ms){ st.sun.shadow.mapSize.set(ms,ms); if(st.sun.shadow.map){ st.sun.shadow.map.dispose(); st.sun.shadow.map = null; } }
-      renderer.shadowMap.needsUpdate = true;
+      if(st.sun.shadow.mapSize.x !== ms){ st.sun.shadow.mapSize.set(ms,ms); if(st.sun.shadow.map){ st.sun.shadow.map.dispose(); st.sun.shadow.map = null; } bakeShadows(); }
     }
     applyPR(); label();
   }
@@ -913,7 +933,7 @@ const CINE = (function(){
     st.S = st.S || survey(); st.win = st.win || findWindows(st.S); st.sunDir = st.sunDir || placeSun(st.win);
     buildExtras();
     st.undo.length = 0;
-    st.hide = []; scene.traverse(o => { if(o.isMesh){ const m = Array.isArray(o.material) ? o.material[0] : o.material; if(m.transparent && (m.depthWrite === false || m.opacity < .9) && !o.userData.keepAO) st.hide.push(o); } });
+    st.meshes = []; scene.traverse(o => { if(o.isMesh) st.meshes.push(o); });
     st.on = true; st.built = true;
     apply();
     st.res = 1; setTier(Math.min(st.tier, st.maxTier));
@@ -924,7 +944,6 @@ const CINE = (function(){
     st.on = false;
     for(let i = st.undo.length-1; i >= 0; i--){ try{ st.undo[i](); }catch(e){} }
     st.undo.length = 0;
-    renderer.shadowMap.needsUpdate = true;
     applyPR(); label(); dirty = true;
   }
 
