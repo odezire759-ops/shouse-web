@@ -80,6 +80,34 @@ h1{margin:7px 0 0; font:600 21px/1.2 var(--font-display); text-wrap:balance}
   border:0; border-radius:999px; padding:10px 12px; min-width:44px; min-height:40px; cursor:pointer;
 }
 .lang button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink)}
+.topr{display:flex; flex-direction:column; align-items:stretch; gap:8px; flex:none; width:112px}
+/* Realistic-mode switch: a physical push button with a lamp that lights up when on */
+.real{
+  pointer-events:auto; display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:9px; align-items:center; text-align:left;
+  min-height:48px; padding:8px 13px 8px 11px; cursor:pointer; color:var(--ink); border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--chip) linear-gradient(180deg,rgba(255,255,255,.34),rgba(0,0,0,.07));
+  box-shadow:0 1px 0 rgba(255,255,255,.55) inset, 0 -3px 5px rgba(0,0,0,.12) inset, var(--shadow);
+  transition:transform .09s, box-shadow .12s; -webkit-tap-highlight-color:transparent;
+}
+.real:active{transform:translateY(2px); box-shadow:0 2px 6px rgba(0,0,0,.28) inset, 0 1px 2px rgba(0,0,0,.18)}
+.real:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.real .led{
+  width:13px; height:13px; border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#d4dae6,#8793aa);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.42), 0 0 0 2px rgba(0,0,0,.1);
+}
+.real[aria-pressed="true"] .led{
+  background:radial-gradient(circle at 36% 30%,#fff4da,#ffb347 55%,#e8851a);
+  box-shadow:0 0 10px 3px rgba(255,165,60,.7), inset 0 1px 1px rgba(255,255,255,.75);
+}
+.real[aria-busy="true"] .led{animation:realpulse .8s ease-in-out infinite}
+@keyframes realpulse{50%{opacity:.3}}
+.real b{display:block; font:600 14px/1.15 var(--font-display); letter-spacing:.01em}
+.real small{display:block; margin-top:2px; font:500 12px/1.2 var(--font-body); color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+@media (prefers-reduced-motion:reduce){.real{transition:none} .real .led{animation:none}}
+/* narrow phones: keep the column slim so the title card keeps its width */
+@media (max-width:420px){.topr{width:98px} .real{min-height:46px; padding:7px 9px 7px 9px; column-gap:7px} .real b{font-size:13px} .real small{font-size:11px}}
 
 .bottom{display:flex; flex-direction:column; align-items:center; gap:10px; min-width:0}
 .hint{
@@ -120,9 +148,15 @@ h1{margin:7px 0 0; font:600 21px/1.2 var(--font-display); text-wrap:balance}
       <p class="meta" id="meta"></p>
       <p class="note" id="note"></p>
     </div>
-    <div class="card lang" role="group" aria-label="Language">
-      <button id="lth" type="button" aria-pressed="true">TH</button>
-      <button id="len" type="button" aria-pressed="false">EN</button>
+    <div class="topr">
+      <div class="card lang" role="group" aria-label="Language">
+        <button id="lth" type="button" aria-pressed="true">TH</button>
+        <button id="len" type="button" aria-pressed="false">EN</button>
+      </div>
+      <button class="real" id="real" type="button" aria-pressed="false" aria-busy="false">
+        <span class="led" aria-hidden="true"></span>
+        <span><b id="realT">สมจริง</b><small id="realS">ปิดอยู่</small></span>
+      </button>
     </div>
   </div>
   <div class="bottom">
@@ -180,7 +214,7 @@ const root = new THREE.Group(); scene.add(root);
 const aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
 /* ---------------- helpers ---------------- */
-const M = (c,o) => new THREE.MeshStandardMaterial(Object.assign({ color:c, roughness:.85, metalness:0 }, o||{}));
+const M = (c,o) => { const m = new THREE.MeshStandardMaterial(Object.assign({ color:c, roughness:.85, metalness:0 }, o||{})); m.userData.hex = c; return m; };
 function B(x0,x1,y0,y1,z0,z1,m,parent,o){
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0), m);
   mesh.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);
@@ -256,7 +290,7 @@ function applyFade(f){
 /* ---------------- shared materials ---------------- */
 const white = M(0xF4F5F3,{roughness:.6}), dark = M(0x2E373B,{roughness:.5,metalness:.4});
 const chrome = M(0xD5DCDE,{roughness:.35,metalness:.2});
-const glassM = () => new THREE.MeshStandardMaterial({ color:0xCFE6EE, roughness:.05, metalness:0, transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false });
+const glassM = () => { const m = new THREE.MeshStandardMaterial({ color:0xCFE6EE, roughness:.05, metalness:0, transparent:true, opacity:.14, side:THREE.DoubleSide, depthWrite:false }); m.userData.glass = 1; return m; };
 const mirrorM = M(0xCBDCE2,{roughness:.06,metalness:.3,emissive:0x0F181B});
 
 /* ---------------- wall-relative kit ----------------
@@ -401,6 +435,7 @@ function sky(){
   ground.rotation.x = -Math.PI/2; ground.position.y = -14; scene.add(ground);
 }
 
+//==REAL==
 //==BUILD==
 
 /* ---------------- walk marker ---------------- */
@@ -577,17 +612,19 @@ function applyLang(){
   $('ttl').textContent = t.title; $('meta').textContent = t.meta.join('\n'); $('note').textContent = t.note;
   cv.setAttribute('aria-label', t.aria);
   VIEWS.forEach(v => { chips[v.id].textContent = v[lang]; if(tagEls[v.id]) tagEls[v.id].textContent = v[lang]; });
+  CINE.lang(lang);
   $('lth').setAttribute('aria-pressed', String(lang === 'th')); $('len').setAttribute('aria-pressed', String(lang === 'en'));
   document.title = 'S.House ' + t.title;
   if(hint.dataset.show === '1') hint.textContent = (S.mode === 'walk') ? t.hintWalk : t.hintOrbit;
 }
 $('lth').addEventListener('click', () => { lang = 'th'; LS.set('sh-lang','th'); applyLang(); });
 $('len').addEventListener('click', () => { lang = 'en'; LS.set('sh-lang','en'); applyLang(); });
+$('real').addEventListener('click', () => CINE.toggle());
 
 /* ---------------- loop ---------------- */
 function resize(){
   const w = stage.clientWidth || innerWidth, h = stage.clientHeight || innerHeight;
-  renderer.setSize(w,h,false); camera.aspect = w/h;
+  renderer.setSize(w,h,false); camera.aspect = w/h; CINE.setSize(w,h);
   if(S.mode === 'orbit' && !S.zoomed){ if(!S.rotated) S.orbit.az = overviewAz(); S.orbit.r = fitR(); }
   camera.updateProjectionMatrix(); dirty = true;
 }
@@ -655,7 +692,7 @@ function frame(now){
       el.style.zIndex = String(Math.round((1-tv3.z)*1000));
     });
   }
-  renderer.render(scene,camera);
+  CINE.render();
   if(firstDraw){ firstDraw = false; document.documentElement.setAttribute('data-ready','1'); }
 }
 
@@ -670,7 +707,8 @@ renderer.shadowMap.needsUpdate = true;
 syncUI();
 hintOnce('orbit');
 requestAnimationFrame(frame);
-window.__room = { S:S, goView:goView, goOrbit:goOrbit, okPos:okPos, lang:function(l){ lang = l; applyLang(); } };
+if(CINE.auto()) setTimeout(() => CINE.toggle(), 80);          // ?real=1, or the visitor left Realistic mode on last time
+window.__room = { cine:CINE, S:S, goView:goView, goOrbit:goOrbit, okPos:okPos, lang:function(l){ lang = l; applyLang(); } };
 })();
 </script>
 </body>
