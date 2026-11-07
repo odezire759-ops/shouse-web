@@ -226,7 +226,7 @@ const VIEWS = [
   { id:'tv',      th:'ทีวี · ตู้เย็น',          en:'TV & fridge',   pos:[0.5,1.5,0.1],     at:[-1.7,0.9,1.7],    fov:80, tag:[-1.6,1.95,1.75] },
   { id:'balcony', th:'ระเบียง',                en:'Balcony',       pos:[0.45,1.5,-2.0],   at:[0.5,0.3,-4.6],    fov:78, tag:[0.45,1.25,-3.3] },
   { id:'bath',    th:'ห้องน้ำหินอ่อน',          en:'Bathroom',      pos:[-0.95,1.55,-2.45], at:[-1.15,1.0,-4.4],  fov:80, tag:[-1.1,1.9,-3.3] },
-  { id:'shower',  th:'ฝักบัว Rain Shower',      en:'Rain shower',   pos:[-1.15,1.6,-2.5], at:[-0.6,1.75,-4.1],  fov:62, tag:[-0.58,2.25,-4.0] }
+  { id:'shower',  th:'ฝักบัว Rain Shower',      en:'Rain shower',   pos:[-0.9,1.6,-3.1], at:[-0.6,1.85,-4.2],  fov:68, tag:[-0.58,2.25,-4.0] }
 ];
 
 /* Where a visitor may stand ([x0,x1,z0,z1]) and what blocks them */
@@ -1005,7 +1005,7 @@ lamp.position.set(0,2.3,.3); lamp.castShadow = true; lamp.shadow.mapSize.set(102
 lamp.shadow.camera.near = .2; lamp.shadow.camera.far = 15; lamp.shadow.bias = -.002;
 scene.add(lamp);
 const ledL = new THREE.PointLight(0xFFE8C0, .35, 3.2, 1.5); ledL.position.set(1.45,1.2,1.5); scene.add(ledL);
-const bathL = new THREE.PointLight(0xFFF8F0, .7, 4.2, 1.4); bathL.position.set(-1.1,2.2,-3.6); scene.add(bathL);
+const bathL = new THREE.PointLight(0xFFF8F0, .42, 4.2, 1.4); bathL.position.set(-1.1,2.2,-3.6); scene.add(bathL);
 const dayL = new THREE.PointLight(0xEAF3FF, .45, 4.5, 1.5); dayL.position.set(1.2,1.7,-1.55); scene.add(dayL);
 
 /* ---------------- textures ---------------- */
