@@ -5,8 +5,9 @@
    dressed with the Deluxe finishes seen in the corner-room photos (rev 5, owner: "the plan is the same as std27"):
    - SOUTH wall (+z): the ENTRANCE door at the west end; the bed lies along this wall, head against the east wall
      (wood + backlit marble headboard wall).
-   - WEST wall (-x), from the south: TV recess (TV + pale-yellow shelf + mini fridge + pedal bin), wall pier with the
-     breaker box (high), clear wall, open built-in wardrobe with LED in the north-west corner.
+   - WEST wall (-x), from the south: clear wall, wall pier with the breaker box (high), then - on the far side of the pier -
+     the TV recess (TV + pale-yellow shelf + mini fridge + pedal bin) right beside the open built-in wardrobe with LED
+     in the north-west corner (owner: "the TV is on the other side of the pier, next to the wardrobe").
    - NORTH wall (-z), from the west: bathroom door (white leaf), then the black-framed 2-pane balcony slider
      (mauve curtains, split A/C above). Marble bathroom (rain shower, glass screen) and the balcony lie outside this wall.
    - EAST wall (+x), from the north: large aluminium sliding WINDOW with the grey-green sofa + coffee table in a blue niche,
@@ -42,7 +43,7 @@ const VIEWS = [
   { id:'bed',     th:'เตียง · ผนังหินอ่อน',     en:'Bed',           pos:[-0.8,1.5,0.2],    at:[1.5,0.95,1.8],    fov:78, tag:[1.5,2.3,1.7] },
   { id:'sofa',    th:'โซฟา · หน้าต่าง',         en:'Sofa & window', pos:[-0.2,1.5,-0.1],   at:[1.6,1.05,-1.65],  fov:80, tag:[1.5,2.3,-1.6] },
   { id:'closet',  th:'ตู้เสื้อผ้า',             en:'Wardrobe',      pos:[0.6,1.5,0.0],     at:[-1.7,1.0,-1.9],   fov:82, tag:[-1.5,2.5,-2.1] },
-  { id:'tv',      th:'ทีวี · ตู้เย็น',          en:'TV & fridge',   pos:[0.5,1.5,0.1],     at:[-1.7,0.9,1.7],    fov:80, tag:[-1.6,1.95,1.75] },
+  { id:'tv',      th:'ทีวี · ตู้เย็น',          en:'TV & fridge',   pos:[0.5,1.5,0.4],     at:[-1.7,0.95,-1.25],  fov:78, tag:[-1.6,1.95,-1.25] },
   { id:'balcony', th:'ระเบียง',                en:'Balcony',       pos:[0.45,1.5,-2.0],   at:[0.5,0.3,-4.6],    fov:78, tag:[0.45,1.25,-3.3] },
   { id:'bath',    th:'ห้องน้ำหินอ่อน',          en:'Bathroom',      pos:[-0.95,1.55,-2.45], at:[-1.15,1.0,-4.4],  fov:80, tag:[-1.1,1.9,-3.3] },
   { id:'shower',  th:'ฝักบัว Rain Shower',      en:'Rain shower',   pos:[-0.9,1.6,-3.1], at:[-0.6,1.85,-4.2],  fov:68, tag:[-0.58,2.25,-4.0] }
@@ -61,7 +62,7 @@ const BLOCK = [
   [1.0,1.9,-2.3,-0.85],                             // sofa
   [0.2,0.9,-1.85,-1.25],                            // coffee table
   [1.6,1.9,-0.5,0.0],                               // east pier
-  [-1.9,-1.3,1.4,2.3],                              // bin + mini fridge + TV shelf
+  [-1.9,-1.3,-1.55,-0.8],                           // bin + mini fridge + TV shelf (beside the wardrobe)
   [-1.9,-1.5,0.5,0.9],                              // west pier
   [-1.9,-1.25,-2.6,-1.55],                          // wardrobe
   [-1.5,-0.9,-4.5,-3.85],                           // toilet
@@ -340,9 +341,9 @@ const gN = fadeGroup('N'), gS = fadeGroup('S'), gW = fadeGroup('W'), gE = fadeGr
   { const q = XZ('W',sm,.7); blob(q[0],q[1],1.1,1.2,.4); }
 }
 
-/* ---------------- west wall, south end: TV recess with yellow shelf, mini fridge, pedal bin ---------------- */
+/* ---------------- west wall, between the wardrobe and the pier: TV recess with yellow shelf, mini fridge, pedal bin ---------------- */
 {
-  const TS = 1.7, TY = 1.4, HW = .36, HH = .21, o = TS-.5;      // o = shift of the original layout along the wall
+  const TS = -1.25, TY = 1.4, HW = .36, HH = .21, o = TS-.5;     // o = shift of the original layout along the wall; the shelf starts at the wardrobe edge (z -1.6)
   const shell = M(0x0E0F10,{roughness:.4,metalness:.2});
   WB('W',TS-HW,TS+HW,TY-HH,TY+HH,0,.05,shell); WB('W',TS-.1,TS+.1,TY-.06,TY+.06,.05,.07,dark,root,{noCast:true});
   const scr = canvasTex(512,288,(g,w,h) => {
